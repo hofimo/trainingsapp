@@ -71,6 +71,25 @@ export interface Settings {
   weights: number[]
 }
 
+export type DayTime = 'morning' | 'noon' | 'evening'
+
+export interface Supplement {
+  id: string
+  name: string
+  /** z. B. "5 g" */
+  dose: string
+  time: DayTime
+  /** Hinweis zur Einnahme */
+  note?: string
+}
+
+export interface SupplementLog {
+  /** YYYY-MM-DD */
+  date: string
+  /** IDs der genommenen Supplements */
+  taken: string[]
+}
+
 export interface Backup {
   app: 'trainingsapp'
   version: 1
@@ -80,4 +99,6 @@ export interface Backup {
   customExercises: Exercise[]
   sessions: Session[]
   bodyWeights: BodyWeight[]
+  supplements?: Supplement[]
+  supplementLogs?: SupplementLog[]
 }

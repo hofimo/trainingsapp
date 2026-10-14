@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import SupplementCard from '../components/SupplementCard'
 import { suggest } from '../progression'
 import { uid, useStore } from '../store'
 import type { Session } from '../types'
@@ -15,7 +16,13 @@ export default function Today() {
   const [chosen, setChosen] = useState<string | null>(null)
   const day = plan.days.find((d) => d.id === chosen) ?? nextDay
 
-  if (open) return <Workout session={open} onClose={() => {}} />
+  if (open)
+    return (
+      <>
+        <Workout session={open} onClose={() => {}} />
+        <SupplementCard compact />
+      </>
+    )
   if (!day) return <p className="muted">Kein Trainingstag im Plan. Lege unter „Plan“ einen an.</p>
 
   const thisWeek = finished.filter((s) => weekStart(s.date) === weekStart(todayISO())).length
@@ -54,6 +61,8 @@ export default function Today() {
           </p>
         </div>
       </header>
+
+      <SupplementCard />
 
       <div className="seg">
         {plan.days.map((d) => (

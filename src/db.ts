@@ -1,8 +1,8 @@
 // Lokale Datenbank im Browser (IndexedDB). Alle Daten bleiben auf dem Gerät.
-import type { BodyWeight, Session } from './types'
+import type { BodyWeight, Session, SupplementLog } from './types'
 
 const DB_NAME = 'trainingsapp'
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 let dbPromise: Promise<IDBDatabase> | null = null
 
@@ -15,6 +15,7 @@ function open(): Promise<IDBDatabase> {
         if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv')
         if (!db.objectStoreNames.contains('sessions')) db.createObjectStore('sessions', { keyPath: 'id' })
         if (!db.objectStoreNames.contains('bodyWeights')) db.createObjectStore('bodyWeights', { keyPath: 'date' })
+        if (!db.objectStoreNames.contains('supplementLog')) db.createObjectStore('supplementLog', { keyPath: 'date' })
       }
       req.onsuccess = () => resolve(req.result)
       req.onerror = () => reject(req.error)
@@ -47,10 +48,14 @@ export const getBodyWeights = () => run<BodyWeight[]>('bodyWeights', 'readonly',
 export const putBodyWeight = (v: BodyWeight) => run<void>('bodyWeights', 'readwrite', (s) => void s.put(v))
 export const deleteBodyWeight = (date: string) => run<void>('bodyWeights', 'readwrite', (s) => void s.delete(date))
 
+export const getSupplementLogs = () => run<SupplementLog[]>('supplementLog', 'readonly', (s) => s.getAll())
+export const putSupplementLog = (v: SupplementLog) => run<void>('supplementLog', 'readwrite', (s) => void s.put(v))
+
 export async function clearAll() {
   await run<void>('kv', 'readwrite', (s) => void s.clear())
   await run<void>('sessions', 'readwrite', (s) => void s.clear())
   await run<void>('bodyWeights', 'readwrite', (s) => void s.clear())
+  await run<void>('supplementLog', 'readwrite', (s) => void s.clear())
 }
 
 /** Bittet den Browser, die Daten nicht automatisch zu löschen (wichtig auf dem iPhone). */

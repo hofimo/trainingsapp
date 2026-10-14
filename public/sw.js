@@ -1,6 +1,6 @@
 // Einfacher Service Worker: macht die App offline nutzbar.
 // Seitenaufrufe: erst Netz, bei Fehler Cache. Dateien (JS, CSS, Bilder): erst Cache, sonst Netz.
-const CACHE = 'training-v1'
+const CACHE = 'training-v2'
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './apple-touch-icon.png']
 
 self.addEventListener('install', (event) => {

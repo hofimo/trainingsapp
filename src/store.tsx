@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import * as db from './db'
-import { EXERCISES, defaultPlan, defaultSettings } from './defaults'
-import type { Backup, BodyWeight, Exercise, Plan, Session, Settings } from './types'
+import { EXERCISES, defaultPlan, defaultSettings, defaultSupplements } from './defaults'
+import type { Backup, BodyWeight, Exercise, Plan, Session, Settings, Supplement, SupplementLog } from './types'
 
 interface Store {
   ready: boolean
@@ -10,6 +10,10 @@ interface Store {
   sessions: Session[]
   bodyWeights: BodyWeight[]
   exercises: Exercise[]
+  supplements: Supplement[]
+  supplementLogs: SupplementLog[]
+  saveSupplements: (s: Supplement[]) => void
+  toggleSupplement: (date: string, id: string) => void
   exById: (id: string) => Exercise
   savePlan: (p: Plan) => void
   saveSettings: (s: Settings) => void
@@ -34,20 +38,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [custom, setCustom] = useState<Exercise[]>([])
   const [sessions, setSessions] = useState<Session[]>([])
   const [bodyWeights, setBodyWeights] = useState<BodyWeight[]>([])
+  const [supplements, setSupplements] = useState<Supplement[]>(defaultSupplements)
+  const [supplementLogs, setSupplementLogs] = useState<SupplementLog[]>([])
 
   const load = useCallback(async () => {
-    const [p, s, c, ss, bw] = await Promise.all([
+    const [p, s, c, ss, bw, sup, sl] = await Promise.all([
       db.kvGet<Plan>('plan'),
       db.kvGet<Settings>('settings'),
       db.kvGet<Exercise[]>('customExercises'),
       db.getSessions(),
       db.getBodyWeights(),
+      db.kvGet<Supplement[]>('supplements'),
+      db.getSupplementLogs(),
     ])
     setPlan(p ?? defaultPlan())
     setSettings(s ?? defaultSettings())
     setCustom(c ?? [])
     setSessions(ss.sort((a, b) => b.date.localeCompare(a.date)))
     setBodyWeights(bw.sort((a, b) => a.date.localeCompare(b.date)))
+    setSupplements(sup ?? defaultSupplements())
+    setSupplementLogs(sl)
     setReady(true)
   }, [])
 
@@ -71,6 +81,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     bodyWeights,
     exercises,
     exById,
+    supplements,
+    supplementLogs,
+    saveSupplements: (list) => {
+      setSupplements(list)
+      db.kvSet('supplements', list)
+    },
+    toggleSupplement: (date, id) => {
+      const cur = supplementLogs.find((l) => l.date === date) ?? { date, taken: [] }
+      const next = { date, taken: cur.taken.includes(id) ? cur.taken.filter((x) => x !== id) : [...cur.taken, id] }
+      setSupplementLogs((prev) => [...prev.filter((l) => l.date !== date), next])
+      db.putSupplementLog(next)
+    },
     savePlan: (p) => {
       setPlan(p)
       db.kvSet('plan', p)
@@ -109,6 +131,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       customExercises: custom,
       sessions,
       bodyWeights,
+      supplements,
+      supplementLogs,
     }),
     importBackup: async (b) => {
       if (b?.app !== 'trainingsapp' || !b.plan || !Array.isArray(b.sessions)) throw new Error('Keine gültige Backup-Datei')
@@ -118,6 +142,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       await db.kvSet('customExercises', b.customExercises ?? [])
       for (const s of b.sessions) await db.putSession(s)
       for (const w of b.bodyWeights ?? []) await db.putBodyWeight(w)
+      if (b.supplements) await db.kvSet('supplements', b.supplements)
+      for (const l of b.supplementLogs ?? []) await db.putSupplementLog(l)
       await load()
     },
     resetAll: async () => {

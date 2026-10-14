@@ -1,4 +1,4 @@
-import type { Exercise, Plan, PlanItem, Settings } from './types'
+import type { Exercise, Plan, PlanItem, Settings, Supplement } from './types'
 
 export const EXERCISES: Exercise[] = [
   // Beine & Po
@@ -108,3 +108,35 @@ export function defaultPlan(): Plan {
 }
 
 export const defaultSettings = (): Settings => ({ weights: [2.5, 5, 7.5, 10, 12.5] })
+
+// Vorschlag für Timo (ca. 92 kg, Krafttraining 3x/Woche). Allgemeine Richtwerte, keine ärztliche Beratung.
+export const defaultSupplements = (): Supplement[] => [
+  {
+    id: 'creatine',
+    name: 'Creatin (Monohydrat)',
+    dose: '5 g',
+    time: 'morning',
+    note: 'Jeden Tag, auch an Ruhetagen. Uhrzeit ist egal, wichtig ist die Regelmäßigkeit. Mit viel Wasser.',
+  },
+  {
+    id: 'd3k2',
+    name: 'Vitamin D3/K2',
+    dose: '2.000 IE D3 + ca. 100 µg K2',
+    time: 'morning',
+    note: 'Zum Frühstück mit etwas Fett, da fettlöslich. Vor allem Oktober bis März wichtig. Ideal: Blutwert (25-OH-D) beim Arzt prüfen lassen.',
+  },
+  {
+    id: 'omega3',
+    name: 'Omega-3',
+    dose: '1–2 g EPA+DHA',
+    time: 'noon',
+    note: 'Zu einer Mahlzeit, dann besser verträglich. Gemeint ist die Menge EPA+DHA laut Etikett, nicht die Menge Fischöl.',
+  },
+  {
+    id: 'magnesium',
+    name: 'Magnesium',
+    dose: '250 mg',
+    time: 'evening',
+    note: 'Abends, z. B. als Citrat oder Glycinat. Kann beim Entspannen und Schlafen helfen. Mehr als 250 mg zusätzlich pro Tag wird nicht empfohlen.',
+  },
+]

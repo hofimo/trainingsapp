@@ -1,11 +1,13 @@
 import { useRef, useState } from 'react'
 import NumInput from '../components/NumInput'
-import { useStore } from '../store'
-import type { Backup } from '../types'
+import { TIME_LABEL } from '../components/SupplementCard'
+import { defaultSupplements } from '../defaults'
+import { uid, useStore } from '../store'
+import type { Backup, DayTime, Supplement } from '../types'
 import { download, fmtNum, todayISO } from '../util'
 
 export default function Settings({ onClose }: { onClose: () => void }) {
-  const { settings, saveSettings, exportBackup, importBackup, resetAll, sessions, bodyWeights } = useStore()
+  const { settings, saveSettings, exportBackup, importBackup, resetAll, sessions, bodyWeights, supplements, saveSupplements } = useStore()
   const [w, setW] = useState<number | null>(null)
   const [msg, setMsg] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -75,6 +77,44 @@ export default function Settings({ onClose }: { onClose: () => void }) {
           <NumInput decimal className="num wide" value={w} onChange={setW} placeholder="z. B. 15" ariaLabel="Neues Gewicht" />
           <button className="btn" onClick={addWeight} disabled={w == null}>
             Hinzufügen
+          </button>
+        </div>
+      </section>
+
+      <section className="card">
+        <h2>Meine Supplements</h2>
+        <p className="small muted">Erscheinen unter „Heute“ zum Abhaken.</p>
+        {supplements.map((sp, i) => {
+          const set = (patch: Partial<Supplement>) => saveSupplements(supplements.map((x, j) => (j === i ? { ...x, ...patch } : x)))
+          return (
+            <div key={sp.id} className="supp-edit">
+              <input className="text" value={sp.name} aria-label="Name" onChange={(e) => set({ name: e.target.value })} />
+              <div className="form-row">
+                <input className="text" value={sp.dose} aria-label="Menge" placeholder="Menge" onChange={(e) => set({ dose: e.target.value })} />
+                <select className="select" value={sp.time} aria-label="Tageszeit" onChange={(e) => set({ time: e.target.value as DayTime })}>
+                  {Object.entries(TIME_LABEL).map(([k, l]) => (
+                    <option key={k} value={k}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="btn tiny ghost danger"
+                  aria-label={`${sp.name} entfernen`}
+                  onClick={() => confirm(`${sp.name} entfernen?`) && saveSupplements(supplements.filter((_, j) => j !== i))}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )
+        })}
+        <div className="form-row">
+          <button className="btn" onClick={() => saveSupplements([...supplements, { id: 's' + uid(), name: 'Neues Supplement', dose: '', time: 'morning' }])}>
+            + Supplement
+          </button>
+          <button className="btn ghost" onClick={() => confirm('Supplements auf den Vorschlag zurücksetzen?') && saveSupplements(defaultSupplements())}>
+            Vorschlag wiederherstellen
           </button>
         </div>
       </section>
