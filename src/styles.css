@@ -915,3 +915,274 @@ p {
   padding: 8px 12px;
   font-variant-numeric: tabular-nums;
 }
+
+/* Farbe und Grafiken */
+.grow-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Wochenring auf „Heute“ */
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  margin: 0 0 12px;
+  border-radius: var(--radius);
+  color: #fff;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #db2777 100%);
+  box-shadow: 0 8px 24px rgb(124 58 237 / 0.25);
+}
+.hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 17px;
+}
+.hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 13px;
+}
+.hero-stats span {
+  background: rgb(255 255 255 / 0.18);
+  border-radius: 99px;
+  padding: 4px 10px;
+}
+.ring {
+  position: relative;
+  flex: none;
+}
+.ring svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.ring circle {
+  fill: none;
+  stroke-width: 10;
+}
+.ring-bg {
+  stroke: rgb(255 255 255 / 0.22);
+}
+.ring-fg {
+  stroke: url(#ring-grad);
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.6s;
+}
+.ring-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.1;
+}
+.ring-label b {
+  font-size: 22px;
+}
+.ring-label span {
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+/* Tagesfarben */
+.day-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--day);
+  margin-right: 6px;
+  vertical-align: middle;
+}
+.seg button.on[style] {
+  background: color-mix(in srgb, var(--day) 22%, var(--surface));
+  box-shadow: inset 0 0 0 1.5px var(--day);
+}
+.day-card {
+  padding-top: 0;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--day) 45%, var(--border));
+}
+.day-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 -14px 6px;
+  padding: 14px;
+  color: #fff;
+  background: linear-gradient(120deg, var(--day), color-mix(in srgb, var(--day) 55%, #000));
+}
+.day-banner h2 {
+  margin: 0;
+}
+.day-banner .small {
+  opacity: 0.85;
+}
+.day-badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--day, var(--accent));
+}
+.day-banner .day-badge {
+  background: rgb(255 255 255 / 0.22);
+}
+.small-badge {
+  width: 38px;
+  height: 38px;
+  font-size: 18px;
+  border-radius: 10px;
+}
+.day-btn {
+  background: linear-gradient(120deg, var(--day), color-mix(in srgb, var(--day) 60%, #000)) !important;
+  border-color: transparent !important;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--day) 35%, transparent);
+}
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.day-progress {
+  height: 8px;
+}
+.day-progress div {
+  background: linear-gradient(90deg, var(--day), color-mix(in srgb, var(--day) 55%, #fff));
+}
+.workout .ex-card.in-group {
+  border-left-color: var(--day);
+}
+.workout .group-tag {
+  color: var(--day);
+}
+.preview li.grouped {
+  border-left-color: var(--day, var(--accent));
+}
+.hist-card {
+  justify-content: flex-start;
+  gap: 12px;
+  border-left: 4px solid var(--day);
+}
+
+/* Übungsbilder und Muskel-Farben */
+.preview li {
+  justify-content: flex-start;
+}
+.thumb {
+  flex: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #fff;
+  box-shadow: 0 0 0 2px var(--mus);
+}
+.thumb-empty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: var(--mus);
+  background: color-mix(in srgb, var(--mus) 18%, var(--surface));
+}
+.ex-head {
+  align-items: center;
+}
+.ex-head .thumb {
+  width: 54px;
+  height: 54px;
+}
+.mtag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 7px;
+  margin-top: 3px;
+  border-radius: 99px;
+  color: var(--mus);
+  background: color-mix(in srgb, var(--mus) 16%, transparent);
+}
+
+/* Abschluss-Karte */
+.summary {
+  border-radius: var(--radius);
+  padding: 14px;
+  margin: 0 0 12px;
+  color: #fff;
+  background: linear-gradient(135deg, #16a34a, #0d9488);
+}
+.summary-title {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.summary-stats div {
+  display: flex;
+  flex-direction: column;
+  background: rgb(255 255 255 / 0.16);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.summary-stats b {
+  font-size: 22px;
+}
+.summary-stats span {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+/* Fortschritt */
+.week-bar div {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 70%, #fff), var(--accent));
+}
+.week-bar div.goal {
+  background: linear-gradient(180deg, #4ade80, var(--good));
+}
+.goal-text {
+  color: var(--good);
+  font-weight: 600;
+}
+.tile-good {
+  background: color-mix(in srgb, var(--good) 16%, var(--surface));
+}
+.tile-good b {
+  color: var(--good);
+}
+.tile-blue {
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface));
+}
+.tile-gold {
+  background: color-mix(in srgb, #eab308 18%, var(--surface));
+}
+.chart .area {
+  fill: url(#area-grad);
+  stroke: none;
+}
+.chart .area-top {
+  stop-color: var(--accent);
+  stop-opacity: 0.35;
+}
+.chart .area-bottom {
+  stop-color: var(--accent);
+  stop-opacity: 0;
+}
+.chart .series {
+  stroke-width: 2.5;
+}

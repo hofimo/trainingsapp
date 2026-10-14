@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import ExerciseInfo from '../components/ExerciseInfo'
+import ExThumb, { MuscleTag } from '../components/ExThumb'
 import NumInput from '../components/NumInput'
 import RestTimer, { loadRest, storeRest, unlockAudio, type Rest } from '../components/RestTimer'
 import { isCompound } from '../muscles'
 import { describeSets, suggest, type Suggestion } from '../progression'
 import { useStore } from '../store'
+import { dayLetter, dayStyle } from '../theme'
 import type { EntryLog, Exercise, PlanItem, Session, SetLog } from '../types'
-import { fmtDate } from '../util'
+import { fmtDate, fmtNum } from '../util'
 
 interface Props {
   session: Session
@@ -94,13 +96,16 @@ export default function Workout({ session, onClose }: Props) {
   }
 
   return (
-    <div className="workout">
+    <div className="workout" style={dayStyle(plan, session.dayId)}>
       <header className="page-head">
-        <div>
+        <div className="title-row">
+          <span className="day-badge">{dayLetter(session.dayName)}</span>
+          <div>
           <h1>{session.dayName}</h1>
           <p className="muted">
             {fmtDate(session.date)} · {doneSets}/{allSets} Sätze
           </p>
+          </div>
         </div>
         {session.finished && (
           <button className="btn ghost" onClick={onClose}>
@@ -108,7 +113,8 @@ export default function Workout({ session, onClose }: Props) {
           </button>
         )}
       </header>
-      <div className="progress-bar">
+      {session.finished && <Summary session={session} />}
+      <div className="progress-bar day-progress">
         <div style={{ width: `${allSets ? (doneSets / allSets) * 100 : 0}%` }} />
       </div>
 
@@ -124,12 +130,13 @@ export default function Workout({ session, onClose }: Props) {
           <section key={entry.planItemId + ei} className={`card ex-card ${inGroup ? 'in-group' : ''} ${groupStart ? 'group-start' : ''}`}>
             {groupStart && <div className="group-tag">Supersatz: im Wechsel, Pause erst danach</div>}
             <div className="ex-head">
-              <div>
+              <ExThumb ex={ex} />
+              <div className="grow-text">
                 <h2>{ex.name}</h2>
                 <p className="muted small">
                   {item.sets} × {item.repMin === item.repMax ? item.repMin : `${item.repMin}–${item.repMax}`}{' '}
                   {ex.kind === 'time' ? 's' : 'Wdh.'}
-                  {ex.perSide ? ' pro Seite' : ''}
+                  {ex.perSide ? ' pro Seite' : ''} <MuscleTag id={ex.id} />
                 </p>
               </div>
               {(ex.cue || ex.img) && (
@@ -269,5 +276,37 @@ function SetTable({ ex, sets, sug, onChange, onDone }: { ex: Exercise; sets: Set
         {sets.some((s) => s.done) && <span className="small muted">{describeSets(ex, sets.filter((s) => s.done))}</span>}
       </div>
     </div>
+  )
+}
+
+/** Bunte Abschluss-Karte für ein beendetes Training */
+function Summary({ session }: { session: Session }) {
+  const { exById } = useStore()
+  const sets = session.entries.reduce((n, e) => n + e.sets.filter((s) => s.done).length, 0)
+  const volume = session.entries.reduce(
+    (v, e) => v + (exById(e.exerciseId).kind === 'dumbbell' ? e.sets.filter((x) => x.done).reduce((a, x) => a + (x.weight ?? 0) * (x.reps ?? 0), 0) : 0),
+    0,
+  )
+  const mins = session.finishedAt ? Math.round((new Date(session.finishedAt).getTime() - new Date(session.date).getTime()) / 60000) : null
+  return (
+    <section className="summary">
+      <div className="summary-title">Training geschafft 🎉</div>
+      <div className="summary-stats">
+        <div>
+          <b>{sets}</b>
+          <span>Sätze</span>
+        </div>
+        <div>
+          <b>{fmtNum(volume, 0)}</b>
+          <span>kg bewegt</span>
+        </div>
+        {mins != null && mins < 300 && (
+          <div>
+            <b>{mins}</b>
+            <span>Minuten</span>
+          </div>
+        )}
+      </div>
+    </section>
   )
 }

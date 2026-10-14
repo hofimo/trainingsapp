@@ -82,3 +82,24 @@ export function setsPerMuscle(sessions: Session[], week: string) {
   }
   return { sets: out, unmapped }
 }
+
+/** Farbe pro Muskelgruppe, Arme bewusst kräftig */
+const MUSCLE_COLOR: Record<Muscle, string> = {
+  biceps: '#ec4899',
+  triceps: '#f43f5e',
+  chest: '#f97316',
+  back: '#3b82f6',
+  shoulders: '#eab308',
+  quads: '#22c55e',
+  glutes: '#14b8a6',
+  calves: '#10b981',
+  core: '#8b5cf6',
+}
+
+/** Hauptmuskel einer Übung mit Name und Farbe, für eigene Übungen ohne Zuordnung null. */
+export function primaryMuscle(exerciseId: string) {
+  const m = MAP[exerciseId]
+  const id = m && (Object.entries(m).find(([, f]) => f === 1)?.[0] as Muscle | undefined)
+  if (!id) return null
+  return { id, name: MUSCLES.find((x) => x.id === id)!.name, color: MUSCLE_COLOR[id] }
+}

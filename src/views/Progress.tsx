@@ -81,13 +81,15 @@ export default function Progress() {
           {weeks.map((w) => (
             <div key={w.start} className="week" title={`Woche ab ${fmtDate(w.start, false)}: ${w.n}`}>
               <div className="week-bar">
-                <div style={{ height: `${Math.min(w.n, 4) * 25}%` }} />
+                <div className={w.n >= 3 ? 'goal' : ''} style={{ height: `${Math.min(w.n, 4) * 25}%` }} />
               </div>
               <span className="small">{w.n}</span>
             </div>
           ))}
         </div>
-        <p className="small muted">Letzte 8 Wochen, Ziel 3 pro Woche</p>
+        <p className="small muted">
+          Letzte 8 Wochen, Ziel 3 pro Woche. <span className="goal-text">Grün = Ziel erreicht</span>
+        </p>
       </section>
 
       <MuscleWeek sessions={sessions} />
@@ -118,8 +120,8 @@ export default function Progress() {
 
           <div className="tiles">
             {first != null && lastP != null && points.length > 1 && (
-              <div className="tile">
-                <span className="small muted">Seit Beginn</span>
+              <div className="tile tile-good">
+                <span className="small muted">📈 Seit Beginn</span>
                 <b>
                   {lastP - first >= 0 ? '+' : ''}
                   {fmtNum(lastP - first)} {unit}
@@ -127,14 +129,14 @@ export default function Progress() {
               </div>
             )}
             {best != null && (
-              <div className="tile">
-                <span className="small muted">Schwerstes Gewicht</span>
+              <div className="tile tile-blue">
+                <span className="small muted">🏋️ Schwerstes Gewicht</span>
                 <b>{fmtNum(best)} kg</b>
               </div>
             )}
             {bestE != null && (
-              <div className="tile">
-                <span className="small muted">Bestes 1RM (geschätzt)</span>
+              <div className="tile tile-gold">
+                <span className="small muted">🏆 Bestes 1RM (geschätzt)</span>
                 <b>{fmtNum(bestE)} kg</b>
               </div>
             )}

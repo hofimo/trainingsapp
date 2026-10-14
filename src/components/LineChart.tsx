@@ -121,6 +121,15 @@ export default function LineChart({ points, unit, trend, trendName = 'Trend', se
             </text>
           ))}
           {trend && trend.length > 1 && <path className="trend" d={path(trend)} />}
+          <defs>
+            <linearGradient id="area-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" className="area-top" />
+              <stop offset="100%" className="area-bottom" />
+            </linearGradient>
+          </defs>
+          {!trend && points.length > 1 && (
+            <path className="area" d={`${path(points)} L${geo.x(points[points.length - 1].date).toFixed(1)},${H - PAD.b} L${geo.x(points[0].date).toFixed(1)},${H - PAD.b} Z`} />
+          )}
           {!trend && points.length > 1 && <path className="series" d={path(points)} />}
           {points.map((p, i) => (
             <circle key={i} className={trend ? 'pt pt-soft' : 'pt'} cx={geo.x(p.date)} cy={geo.y(p.y)} r={active === i ? 5 : 3.5} />
