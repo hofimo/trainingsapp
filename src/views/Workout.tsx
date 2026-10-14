@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ExerciseInfo from '../components/ExerciseInfo'
 import NumInput from '../components/NumInput'
 import { describeSets, suggest, type Suggestion } from '../progression'
 import { useStore } from '../store'
@@ -89,13 +90,13 @@ export default function Workout({ session, onClose }: Props) {
                   {ex.perSide ? ' pro Seite' : ''}
                 </p>
               </div>
-              {ex.cue && (
+              {(ex.cue || ex.img) && (
                 <button className="btn tiny ghost" onClick={() => setOpenCue(openCue === entry.planItemId ? null : entry.planItemId)}>
                   Technik
                 </button>
               )}
             </div>
-            {openCue === entry.planItemId && <p className="cue">{ex.cue}</p>}
+            {openCue === entry.planItemId && <ExerciseInfo ex={ex} />}
 
             <div className={`sug sug-${sug.kind}`}>
               <b>{LABEL[sug.kind]}</b> {sug.text}

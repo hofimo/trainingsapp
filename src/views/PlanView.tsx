@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ExerciseInfo from '../components/ExerciseInfo'
 import NumInput from '../components/NumInput'
 import { defaultPlan } from '../defaults'
 import { uid, useStore } from '../store'
@@ -15,6 +16,7 @@ export default function PlanView() {
   const { plan, savePlan, exercises, exById, addCustomExercise } = useStore()
   const [dayId, setDayId] = useState(plan.days[0]?.id)
   const [adding, setAdding] = useState(false)
+  const [info, setInfo] = useState<string | null>(null)
   const [newName, setNewName] = useState('')
   const [newKind, setNewKind] = useState<Kind>('dumbbell')
   const day = plan.days.find((d) => d.id === dayId) ?? plan.days[0]
@@ -133,6 +135,11 @@ export default function PlanView() {
             <div className="ex-head">
               <h2>{ex.name}</h2>
               <div className="row-btns">
+                {(ex.img || ex.cue) && (
+                  <button className="btn tiny ghost" onClick={() => setInfo(info === item.id ? null : item.id)}>
+                    Technik
+                  </button>
+                )}
                 <button className="btn tiny ghost" aria-label="nach oben" onClick={() => move(idx, -1)} disabled={idx === 0}>
                   ↑
                 </button>
@@ -148,6 +155,7 @@ export default function PlanView() {
                 </button>
               </div>
             </div>
+            {info === item.id && <ExerciseInfo ex={ex} />}
             <div className="plan-fields">
               <label>
                 <span className="small muted">Sätze</span>

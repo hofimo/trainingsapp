@@ -44,6 +44,26 @@ export const EXERCISES: Exercise[] = [
   { id: 'plank', name: 'Unterarmstütz', kind: 'time', cue: 'Po anspannen, kein Hohlkreuz.' },
 ]
 
+// Übungen mit Bildern (Start- und Endposition aus free-exercise-db, gemeinfrei)
+const WITH_IMAGES = new Set([
+  'goblet_squat', 'split_squat', 'reverse_lunge', 'hip_thrust', 'rdl', 'step_up', 'calf_raise', 'db_bench', 'incline_press',
+  'pushup', 'close_pushup', 'db_fly', 'pullup', 'chinup', 'row', 'face_pull', 'band_pull_apart', 'reverse_fly',
+  'shoulder_press', 'lateral_raise', 'curl', 'hammer_curl', 'incline_curl', 'concentration_curl', 'band_curl',
+  'french_press', 'kickback', 'overhead_ext', 'band_pushdown', 'bench_dip', 'dead_bug', 'side_plank', 'plank',
+])
+const IMG_NOTES: Record<string, string> = {
+  goblet_squat: 'Bild zeigt eine Kettlebell. Mit der Kurzhantel genauso, dabei senkrecht an einem Ende vor der Brust halten.',
+  hip_thrust: 'Bild zeigt die Variante mit Langhantel. Du legst stattdessen eine Kurzhantel auf die Hüfte.',
+  face_pull: 'Bild zeigt die Variante am Kabelzug. Du machst es mit dem Band, das du auf Kopfhöhe befestigst.',
+  band_curl: 'Bild zeigt die Bewegung mit Kurzhanteln. Mit dem Band genauso, dabei auf dem Band stehen.',
+  band_pushdown: 'Bild zeigt die Variante am Kabelzug. Du befestigst das Band oben an der Klimmzugstange.',
+  rdl: 'Mit leicht gebeugten Knien und geradem Rücken. Nur so tief, wie es für den Rücken angenehm ist.',
+}
+for (const e of EXERCISES) {
+  e.img = WITH_IMAGES.has(e.id)
+  e.imgNote = IMG_NOTES[e.id]
+}
+
 let n = 0
 const item = (exerciseId: string, sets: number, repMin: number, repMax: number, group?: string): PlanItem => ({
   id: `p${++n}`,

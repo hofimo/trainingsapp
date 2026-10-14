@@ -10,6 +10,10 @@ export interface Exercise {
   start?: number
   /** Kurzer Technik-Hinweis */
   cue?: string
+  /** Bilder vorhanden unter public/exercises/<id>-0.jpg und -1.jpg */
+  img?: boolean
+  /** Hinweis, wenn das Bild eine Variante zeigt */
+  imgNote?: string
   /** Was tun, wenn das schwerste Gewicht zu leicht wird */
   harder?: string
   custom?: boolean
