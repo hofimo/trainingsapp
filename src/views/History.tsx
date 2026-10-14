@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useStore } from '../store'
+import { dayLetter, dayStyle } from '../theme'
 import { fmtDate, fmtNum } from '../util'
 import Workout from './Workout'
 
 export default function History() {
-  const { sessions, exById } = useStore()
+  const { sessions, plan, exById } = useStore()
   const [openId, setOpenId] = useState<string | null>(null)
   const finished = sessions.filter((s) => s.finished)
   const open = finished.find((s) => s.id === openId)
@@ -28,8 +29,9 @@ export default function History() {
         )
         const mins = s.finishedAt ? Math.round((new Date(s.finishedAt).getTime() - new Date(s.date).getTime()) / 60000) : null
         return (
-          <button key={s.id} className="card row-card" onClick={() => setOpenId(s.id)}>
-            <div>
+          <button key={s.id} className="card row-card hist-card" style={dayStyle(plan, s.dayId)} onClick={() => setOpenId(s.id)}>
+            <span className="day-badge small-badge">{dayLetter(s.dayName)}</span>
+            <div className="grow-text">
               <b>{s.dayName}</b>
               <div className="muted small">{fmtDate(s.date)}</div>
             </div>
