@@ -73,6 +73,10 @@ export interface BodyWeight {
 export interface Settings {
   /** Verfügbare Kurzhantelgewichte pro Hand in kg */
   weights: number[]
+  /** Pause nach Grundübungen in Sekunden (Standard 90) */
+  restLong?: number
+  /** Pause nach Isolationsübungen in Sekunden (Standard 60) */
+  restShort?: number
 }
 
 export type DayTime = 'morning' | 'noon' | 'evening'

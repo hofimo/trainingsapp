@@ -789,3 +789,129 @@ p {
   color: var(--text-2);
   margin-top: 4px;
 }
+
+.num.short {
+  width: 72px;
+}
+.grow {
+  flex: 1;
+  min-width: 160px;
+  font-size: 15px;
+}
+
+/* Pausentimer */
+.rest {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--tab-h) + env(safe-area-inset-bottom) + 10px);
+  width: min(608px, calc(100% - 32px));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.18);
+  overflow: hidden;
+  z-index: 11;
+}
+.rest-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--info-bg);
+  transition: width 0.25s linear;
+}
+.rest-over {
+  border-color: var(--good);
+}
+.rest-over .rest-fill {
+  background: var(--good-bg);
+}
+.rest-body {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+}
+.rest-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.rest-text .small {
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rest-text b {
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.rest-over .rest-text b {
+  color: var(--good);
+}
+.workout:has(.rest) {
+  padding-bottom: 84px;
+}
+
+/* Sätze pro Muskel */
+.week-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.mus {
+  display: grid;
+  grid-template-columns: 124px 1fr 40px;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-size: 14px;
+}
+.mus-bar {
+  position: relative;
+  height: 14px;
+  background: var(--surface-2);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.mus-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--good) 18%, transparent);
+}
+.mus-fill {
+  position: absolute;
+  inset: 3px auto 3px 0;
+  border-radius: 4px;
+  background: var(--text-2);
+}
+.mus-fill.ok {
+  background: var(--good);
+}
+.mus-fill.low,
+.mus-fill.high {
+  background: var(--warn);
+}
+.mus-n {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.mus-n.ok {
+  color: var(--good);
+}
+.mus-n.low,
+.mus-n.high {
+  color: var(--warn);
+}
+.rest-body .btn {
+  padding: 8px 12px;
+  font-variant-numeric: tabular-nums;
+}
