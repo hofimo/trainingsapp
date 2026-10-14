@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import ExerciseInfo from '../components/ExerciseInfo'
 import NumInput from '../components/NumInput'
+import RestTimer, { loadRest, storeRest, unlockAudio, type Rest } from '../components/RestTimer'
+import { isCompound } from '../muscles'
 import { describeSets, suggest, type Suggestion } from '../progression'
 import { useStore } from '../store'
 import type { EntryLog, Exercise, PlanItem, Session, SetLog } from '../types'
@@ -23,7 +25,34 @@ const LABEL: Record<Suggestion['kind'], string> = {
 export default function Workout({ session, onClose }: Props) {
   const { plan, settings, sessions, exById, saveSession, removeSession } = useStore()
   const [openCue, setOpenCue] = useState<string | null>(null)
+  const [rest, setRestState] = useState<Rest | null>(() => (session.finished ? null : loadRest()))
   const day = plan.days.find((d) => d.id === session.dayId)
+
+  const setRest = useCallback((r: Rest | null) => {
+    setRestState(r)
+    storeRest(r)
+  }, [])
+
+  // Bildschirm während des Trainings anlassen, damit der Timer sichtbar bleibt
+  useEffect(() => {
+    if (session.finished || !('wakeLock' in navigator)) return
+    let lock: WakeLockSentinel | null = null
+    let active = true
+    const acquire = async () => {
+      try {
+        if (active && document.visibilityState === 'visible') lock = await navigator.wakeLock.request('screen')
+      } catch {
+        // z. B. Energiesparmodus: dann eben ohne
+      }
+    }
+    acquire()
+    document.addEventListener('visibilitychange', acquire)
+    return () => {
+      active = false
+      document.removeEventListener('visibilitychange', acquire)
+      lock?.release().catch(() => {})
+    }
+  }, [session.finished])
 
   const update = (fn: (s: Session) => Session) => saveSession(fn(structuredClone(session)))
 
@@ -39,13 +68,26 @@ export default function Workout({ session, onClose }: Props) {
   const doneSets = session.entries.reduce((n, e) => n + e.sets.filter((s) => s.done).length, 0)
   const allSets = session.entries.reduce((n, e) => n + e.sets.length, 0)
 
+  /** Nach einem erledigten Satz die Pause starten, außer mitten im Supersatz oder nach dem letzten Satz. */
+  function setDone(ei: number) {
+    const item = itemFor(session.entries[ei])
+    const next = session.entries[ei + 1]
+    if (item.group && next && itemFor(next).group === item.group) return
+    if (allSets - doneSets <= 1) return setRest(null)
+    const ex = exById(session.entries[ei].exerciseId)
+    const total = isCompound(ex.id) ? settings.restLong ?? 90 : settings.restShort ?? 60
+    setRest({ endsAt: Date.now() + total * 1000, total, label: ex.name })
+  }
+
   function finish() {
+    setRest(null)
     update((s) => ({ ...s, finished: true, finishedAt: s.finishedAt ?? new Date().toISOString() }))
     onClose()
   }
 
   function discard() {
     if (confirm('Dieses Training wirklich löschen?')) {
+      setRest(null)
       removeSession(session.id)
       onClose()
     }
@@ -107,6 +149,7 @@ export default function Workout({ session, onClose }: Props) {
               ex={ex}
               sets={entry.sets}
               sug={sug}
+              onDone={() => setDone(ei)}
               onChange={(sets) =>
                 update((s) => {
                   s.entries[ei].sets = sets
@@ -156,11 +199,13 @@ export default function Workout({ session, onClose }: Props) {
           Training löschen
         </button>
       </div>
+
+      {!session.finished && <RestTimer rest={rest} onChange={setRest} />}
     </div>
   )
 }
 
-function SetTable({ ex, sets, sug, onChange }: { ex: Exercise; sets: SetLog[]; sug: Suggestion; onChange: (s: SetLog[]) => void }) {
+function SetTable({ ex, sets, sug, onChange, onDone }: { ex: Exercise; sets: SetLog[]; sug: Suggestion; onChange: (s: SetLog[]) => void; onDone: () => void }) {
   const hasWeight = ex.kind === 'dumbbell' || ex.kind === 'bodyweight'
   const set = (i: number, patch: Partial<SetLog>) => onChange(sets.map((s, j) => (j === i ? { ...s, ...patch } : s)))
 
@@ -175,7 +220,9 @@ function SetTable({ ex, sets, sug, onChange }: { ex: Exercise; sets: SetLog[]; s
       if (j > i && !x.done && ex.kind === 'dumbbell' && weight != null) return { ...x, weight }
       return x
     })
+    unlockAudio()
     onChange(next)
+    onDone()
     navigator.vibrate?.(30)
   }
 

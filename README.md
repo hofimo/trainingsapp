@@ -1,6 +1,6 @@
 # Trainingsapp
 
-Web-App fürs Krafttraining im Homegym: Trainingsplan (Ganzkörper A/B/C mit Arm-Fokus), Sätze mit Gewicht und Wiederholungen eintragen, automatische Steigerungsvorschläge, Fortschrittsdiagramme und Körpergewicht. Läuft auf dem iPhone wie eine App, auch offline. Alle Daten bleiben auf dem Handy (Backup über Einstellungen → Backup exportieren).
+Web-App fürs Krafttraining im Homegym: Trainingsplan (Ganzkörper A/B/C mit Arm-Fokus), Sätze mit Gewicht und Wiederholungen eintragen, automatische Steigerungsvorschläge, Pausentimer, Sätze pro Muskel und Woche, Fortschrittsdiagramme und Körpergewicht. Läuft auf dem iPhone wie eine App, auch offline. Alle Daten bleiben auf dem Handy (Backup über Einstellungen → Backup exportieren).
 
 ## Lokal starten (Mac)
 

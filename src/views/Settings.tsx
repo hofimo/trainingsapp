@@ -82,6 +82,21 @@ export default function Settings({ onClose }: { onClose: () => void }) {
       </section>
 
       <section className="card">
+        <h2>Pausentimer</h2>
+        <p className="small muted">Startet automatisch, wenn du einen Satz abhakst. Bei Supersätzen erst nach der zweiten Übung.</p>
+        <div className="form-row">
+          <label className="grow">Grundübungen (Kniebeugen, Drücken, Klimmzüge …)</label>
+          <NumInput className="num short" value={settings.restLong ?? null} placeholder="90" onChange={(v) => saveSettings({ ...settings, restLong: v && v > 0 ? v : undefined })} ariaLabel="Pause Grundübungen in Sekunden" />
+          <span className="small muted">s</span>
+        </div>
+        <div className="form-row">
+          <label className="grow">Arme, Schultern, Rumpf</label>
+          <NumInput className="num short" value={settings.restShort ?? null} placeholder="60" onChange={(v) => saveSettings({ ...settings, restShort: v && v > 0 ? v : undefined })} ariaLabel="Pause Isolationsübungen in Sekunden" />
+          <span className="small muted">s</span>
+        </div>
+      </section>
+
+      <section className="card">
         <h2>Meine Supplements</h2>
         <p className="small muted">Erscheinen unter „Heute“ zum Abhaken.</p>
         {supplements.map((sp, i) => {

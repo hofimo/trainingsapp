@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import LineChart, { type Point } from '../components/LineChart'
+import MuscleWeek from '../components/MuscleWeek'
 import { describeSets, e1rm, historyFor } from '../progression'
 import { useStore } from '../store'
 import { fmtDate, fmtNum, todayISO, weekStart } from '../util'
@@ -88,6 +89,8 @@ export default function Progress() {
         </div>
         <p className="small muted">Letzte 8 Wochen, Ziel 3 pro Woche</p>
       </section>
+
+      <MuscleWeek sessions={sessions} />
 
       {!ex ? (
         <p className="muted card">Sobald du Trainings abgeschlossen hast, siehst du hier deine Kurven pro Übung.</p>
