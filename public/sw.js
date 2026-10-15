@@ -1,6 +1,6 @@
-// Einfacher Service Worker: macht die App offline nutzbar.
+// Service Worker: macht die App offline nutzbar und zeigt die täglichen Erinnerungen.
 // Seitenaufrufe: erst Netz, bei Fehler Cache. Dateien (JS, CSS, Bilder): erst Cache, sonst Netz.
-const CACHE = 'training-v6'
+const CACHE = 'training-v7'
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './apple-touch-icon.png']
 
 // Übungsbilder vorab laden, damit „Technik“ auch offline funktioniert
@@ -114,5 +114,127 @@ self.addEventListener('fetch', (event) => {
           return res
         }),
     ),
+  )
+})
+
+// ---------- Erinnerungen (Web Push) ----------
+// Der Push enthält nur { kind: 'morning' | 'evening' }. Den Text bauen wir hier aus den Daten
+// auf dem Handy, damit er sagt, was heute wirklich noch fehlt.
+
+function readAll() {
+  return new Promise((resolve) => {
+    const req = indexedDB.open('trainingsapp')
+    req.onerror = () => resolve(null)
+    req.onsuccess = () => {
+      const db = req.result
+      const want = ['kv', 'bodyWeights', 'supplementLog', 'sessions'].filter((n) => db.objectStoreNames.contains(n))
+      if (want.length < 4) return resolve(null)
+      const tx = db.transaction(want, 'readonly')
+      const out = {}
+      const get = (key, fn) => {
+        const r = fn()
+        r.onsuccess = () => (out[key] = r.result)
+      }
+      const today = localDate(new Date())
+      get('settings', () => tx.objectStore('kv').get('settings'))
+      get('supplements', () => tx.objectStore('kv').get('supplements'))
+      get('weight', () => tx.objectStore('bodyWeights').get(today))
+      get('log', () => tx.objectStore('supplementLog').get(today))
+      get('sessions', () => tx.objectStore('sessions').getAll())
+      tx.oncomplete = () => resolve(out)
+      tx.onerror = () => resolve(null)
+    }
+  })
+}
+
+const localDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+const shortName = (n) => n.replace(/\s*\(.*?\)\s*/g, ' ').trim()
+const list = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} und ${xs[xs.length - 1]}`)
+
+async function buildReminder(kind) {
+  const d = (await readAll()) || {}
+  const name = d.settings?.name?.trim()
+  const supps = d.supplements || []
+  const taken = d.log?.taken || []
+  const hasWeight = !!d.weight
+  const open = (times) => supps.filter((s) => times.includes(s.time) && !taken.includes(s.id)).map((s) => shortName(s.name))
+
+  if (kind === 'morning') {
+    const pills = open(['morning'])
+    const parts = []
+    if (!hasWeight) parts.push('Ab auf die Waage und Gewicht eintragen.')
+    if (pills.length) parts.push(`${hasWeight ? '' : 'Danach '}${list(pills)} nehmen.`)
+    return {
+      title: `Guten Morgen${name ? ', ' + name : ''} ☀️`,
+      body: parts.join(' ') || 'Gewicht und Morgen-Supplements sind schon erledigt. Stark!',
+      tab: hasWeight ? 'today' : 'body',
+    }
+  }
+
+  const pills = open(['morning', 'noon', 'evening'])
+  const today = new Date().toDateString()
+  const trained = (d.sessions || []).some((s) => s.finished && new Date(s.date).toDateString() === today)
+  const todo = []
+  if (pills.length) todo.push(`Noch offen: ${list(pills)}`)
+  if (!hasWeight) todo.push('Gewicht von heute fehlt')
+  if (!todo.length)
+    return {
+      title: 'Alles erledigt heute ✅',
+      body: `Supplements komplett, Gewicht eingetragen${trained ? ', Training gemacht' : ''}. Gut gemacht${name ? ', ' + name : ''}!`,
+      tab: 'today',
+    }
+  return {
+    title: `Abend-Check${name ? ', ' + name : ''}`,
+    body: `${todo.join('. ')}.${trained ? ' Training heute ✓' : ''}`,
+    tab: hasWeight ? 'today' : 'body',
+  }
+}
+
+async function showReminder(kind) {
+  let r
+  try {
+    r = await buildReminder(kind)
+  } catch {
+    r = kind === 'morning'
+      ? { title: 'Guten Morgen ☀️', body: 'Gewicht eintragen und Morgen-Supplements nehmen.', tab: 'body' }
+      : { title: 'Abend-Check', body: 'Alle Supplements genommen? Schau kurz in die App.', tab: 'today' }
+  }
+  return self.registration.showNotification(r.title, {
+    body: r.body,
+    icon: './icon-192.png',
+    badge: './icon-192.png',
+    tag: 'reminder-' + kind,
+    data: { tab: r.tab },
+  })
+}
+
+self.addEventListener('push', (event) => {
+  let kind = 'morning'
+  try {
+    kind = event.data?.json().kind === 'evening' ? 'evening' : 'morning'
+  } catch {
+    // leerer oder unbekannter Push: Morgen-Erinnerung
+  }
+  event.waitUntil(showReminder(kind))
+})
+
+// Vorschau aus den Einstellungen
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'preview') event.waitUntil(showReminder(event.data.kind))
+})
+
+// Tippen auf die Benachrichtigung öffnet die App im passenden Bereich
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const tab = event.notification.data?.tab || 'today'
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const c = list[0]
+      if (c) {
+        c.postMessage({ type: 'open-tab', tab })
+        return c.focus()
+      }
+      return self.clients.openWindow('./#' + tab)
+    }),
   )
 })

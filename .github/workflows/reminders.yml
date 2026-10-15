@@ -1,0 +1,45 @@
+name: Tägliche Erinnerungen
+
+# Schickt morgens (ca. 7:30) und abends (ca. 18:00, deutsche Zeit) eine Erinnerung ans iPhone.
+# GitHub plant in UTC, deshalb gibt es je einen Zeitplan für Sommer- und Winterzeit; das Skript
+# sendet nur beim passenden. GitHub startet geplante Läufe oft 5–20 Minuten später, daher
+# stehen die Zeiten etwas vor 7:30 bzw. 18:00.
+on:
+  schedule:
+    - cron: '20 5 * * *' # 7:20 Sommerzeit
+    - cron: '20 6 * * *' # 7:20 Winterzeit
+    - cron: '50 15 * * *' # 17:50 Sommerzeit
+    - cron: '50 16 * * *' # 17:50 Winterzeit
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: Welche Erinnerung jetzt zum Testen schicken?
+        type: choice
+        options: [morning, evening]
+        default: morning
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/reminder
+      - id: decide
+        working-directory: scripts/reminder
+        run: node reminder.mjs decide >> "$GITHUB_OUTPUT"
+        env:
+          EVENT: ${{ github.event_name }}
+          SCHEDULE: ${{ github.event.schedule }}
+          INPUT_KIND: ${{ inputs.kind }}
+      - if: steps.decide.outputs.kind != ''
+        working-directory: scripts/reminder
+        run: npm ci --no-audit --no-fund && node reminder.mjs send
+        env:
+          KIND: ${{ steps.decide.outputs.kind }}
+          PUSH_CONFIG: ${{ secrets.PUSH_CONFIG }}
+          SUBJECT: https://${{ github.repository_owner }}.github.io/

@@ -30,13 +30,20 @@ Im Browser `http://localhost:5173` öffnen. Zum Ausprobieren auf dem iPhone im s
 
 Jeder weitere Push auf `main` aktualisiert die App automatisch. Die Trainingsdaten auf dem Handy bleiben dabei erhalten.
 
+## Erinnerungen (Push)
+
+Morgens gegen 7:30 Uhr (Gewicht, Morgen-Supplements) und abends gegen 18 Uhr (was heute noch fehlt). Ein iPhone-Web-App kann keine Uhrzeit selbst planen, deshalb schickt der geplante Workflow `.github/workflows/reminders.yml` den Push; den Text baut `public/sw.js` aus den Daten auf dem Handy.
+
+Einrichten: App vom Home-Bildschirm öffnen → Einstellungen → Erinnerungen → „Erinnerungen einschalten“ → „Code kopieren“. Dann im Repository unter **Settings → Secrets and variables → Actions** ein Secret `PUSH_CONFIG` mit dem Code anlegen. Testen: unter **Actions → Tägliche Erinnerungen → Run workflow**.
+
 ## Aufbau
 
 - `src/defaults.ts` – Übungsliste und Startplan
 - `src/progression.ts` – Steigerungsregel (doppelte Progression)
 - `src/db.ts` – lokale Speicherung (IndexedDB)
 - `src/views/` – Bildschirme: Heute/Training, Verlauf, Fortschritt, Körpergewicht, Plan, Einstellungen
-- `public/sw.js` – Offline-Funktion
+- `public/sw.js` – Offline-Funktion und Text der Erinnerungen
+- `src/push.ts`, `scripts/reminder/` – Erinnerungen per Web Push
 
 ## Steigerungsregel
 

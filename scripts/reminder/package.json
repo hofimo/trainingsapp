@@ -1,0 +1,9 @@
+{
+  "name": "trainingsapp-reminder",
+  "private": true,
+  "type": "module",
+  "description": "Schickt die täglichen Erinnerungen per Web Push (läuft in GitHub Actions)",
+  "dependencies": {
+    "web-push": "3.6.7"
+  }
+}

@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import NumInput from '../components/NumInput'
 import { TIME_LABEL } from '../components/SupplementCard'
 import { defaultSupplements } from '../defaults'
+import { currentPushCode, enablePush, isStandalone, previewReminder, pushSupported } from '../push'
 import { beep, unlockAudio } from '../sound'
 import { uid, useStore } from '../store'
 import type { Backup, DayTime, Supplement } from '../types'
@@ -167,6 +168,8 @@ export default function Settings({ onClose }: { onClose: () => void }) {
         </div>
       </section>
 
+      <ReminderCard />
+
       <section className="card">
         <h2>Backup</h2>
         <p className="small muted">
@@ -215,5 +218,87 @@ export default function Settings({ onClose }: { onClose: () => void }) {
         </button>
       </section>
     </div>
+  )
+}
+
+/** Erinnerungen morgens (Gewicht, Morgen-Supplements) und abends (Tages-Check) per Push. */
+function ReminderCard() {
+  const [code, setCode] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  useEffect(() => {
+    currentPushCode().then(setCode, () => {})
+  }, [])
+
+  async function enable() {
+    setBusy(true)
+    setMsg('')
+    try {
+      setCode(await enablePush())
+    } catch (e) {
+      setMsg((e as Error).message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function copy() {
+    if (!code) return
+    try {
+      await navigator.clipboard.writeText(code)
+      setMsg('Code kopiert. Jetzt bei GitHub als PUSH_CONFIG einfügen.')
+    } catch {
+      setMsg('Kopieren ging nicht. Markiere den Code unten und kopiere ihn von Hand.')
+    }
+  }
+
+  return (
+    <section className="card">
+      <h2>Erinnerungen</h2>
+      <p className="small muted">
+        Morgens gegen 7:30 Uhr: Gewicht eintragen und Morgen-Supplements. Abends gegen 18 Uhr: was heute noch fehlt. Die Uhrzeit kann sich um ein paar Minuten
+        verschieben.
+      </p>
+      {!pushSupported() || !isStandalone() ? (
+        <p className="small">Erinnerungen gehen nur, wenn du die App vom Home-Bildschirm öffnest (siehe „Auf dem iPhone installieren“).</p>
+      ) : !code ? (
+        <button className="btn" onClick={enable} disabled={busy}>
+          {busy ? 'Einen Moment …' : '🔔 Erinnerungen einschalten'}
+        </button>
+      ) : (
+        <>
+          <p className="small">
+            ✓ Dieses iPhone ist bereit. Einmalig muss der Code noch zu GitHub, damit von dort die Erinnerungen kommen:
+          </p>
+          <ol className="small">
+            <li>„Code kopieren“ tippen.</li>
+            <li>
+              Auf github.com dein Repository <b>trainingsapp</b> öffnen → Settings → Secrets and variables → Actions → New repository secret.
+            </li>
+            <li>
+              Name <b>PUSH_CONFIG</b>, als Wert den Code einfügen, speichern.
+            </li>
+          </ol>
+          <div className="form-row">
+            <button className="btn" onClick={copy}>
+              Code kopieren
+            </button>
+            <button className="btn ghost" onClick={enable} disabled={busy}>
+              Neu einrichten
+            </button>
+          </div>
+          <div className="form-row">
+            <button className="btn tiny ghost" onClick={() => previewReminder('morning')}>
+              Vorschau morgens
+            </button>
+            <button className="btn tiny ghost" onClick={() => previewReminder('evening')}>
+              Vorschau abends
+            </button>
+          </div>
+        </>
+      )}
+      {msg && <p className="small">{msg}</p>}
+    </section>
   )
 }
