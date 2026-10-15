@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import NumInput from '../components/NumInput'
 import { TIME_LABEL } from '../components/SupplementCard'
 import { defaultSupplements } from '../defaults'
+import { beep, unlockAudio } from '../sound'
 import { uid, useStore } from '../store'
 import type { Backup, DayTime, Supplement } from '../types'
 import { download, fmtNum, todayISO } from '../util'
@@ -61,6 +62,29 @@ export default function Settings({ onClose }: { onClose: () => void }) {
       </header>
 
       <section className="card">
+        <h2>Über mich</h2>
+        <div className="form-row">
+          <label className="grow" htmlFor="name">
+            Dein Vorname
+          </label>
+          <input
+            id="name"
+            className="text"
+            type="text"
+            autoComplete="given-name"
+            placeholder="z. B. Timo"
+            value={settings.name ?? ''}
+            onChange={(e) => saveSettings({ ...settings, name: e.target.value })}
+          />
+        </div>
+        <label className="toggle-row">
+          <input type="checkbox" checked={settings.voice !== false} onChange={(e) => saveSettings({ ...settings, voice: e.target.checked })} />
+          <span>Begrüßung und Lob vorlesen</span>
+        </label>
+        <p className="small muted">Die App spricht dich mit Namen an, begrüßt dich beim Start und lobt dich am Ende jedes Trainings, jedes Mal anders.</p>
+      </section>
+
+      <section className="card">
         <h2>Meine Kurzhanteln</h2>
         <p className="small muted">Gewicht pro Hand. Die App schlägt beim Steigern nur Gewichte vor, die du hier hast.</p>
         <div className="chips">
@@ -94,6 +118,15 @@ export default function Settings({ onClose }: { onClose: () => void }) {
           <NumInput className="num short" value={settings.restShort ?? null} placeholder="60" onChange={(v) => saveSettings({ ...settings, restShort: v && v > 0 ? v : undefined })} ariaLabel="Pause Isolationsübungen in Sekunden" />
           <span className="small muted">s</span>
         </div>
+        <button
+          className="btn tiny ghost"
+          onClick={() => {
+            unlockAudio()
+            beep()
+          }}
+        >
+          🔔 Ton testen
+        </button>
       </section>
 
       <section className="card">

@@ -62,6 +62,11 @@ export interface Session {
   note?: string
   finished: boolean
   finishedAt?: string
+  /** Begrüßung beim Start */
+  startMsg?: string
+  /** Lob am Ende und welche Vorlage es war (damit es nicht gleich wiederkommt) */
+  praise?: string
+  praiseId?: number
 }
 
 export interface BodyWeight {
@@ -77,6 +82,10 @@ export interface Settings {
   restLong?: number
   /** Pause nach Isolationsübungen in Sekunden (Standard 60) */
   restShort?: number
+  /** Vorname für die Ansprache */
+  name?: string
+  /** Begrüßung und Lob vorlesen (Standard an) */
+  voice?: boolean
 }
 
 export type DayTime = 'morning' | 'noon' | 'evening'

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { beep } from '../sound'
 
 export interface Rest {
   /** Ende als Zeitstempel in ms */
@@ -27,34 +28,6 @@ export function storeRest(r: Rest | null) {
   }
 }
 
-let audio: AudioContext | null = null
-
-/** Muss bei einem Tippen aufgerufen werden, sonst bleibt das iPhone stumm. */
-export function unlockAudio() {
-  try {
-    audio ??= new AudioContext()
-    if (audio.state === 'suspended') audio.resume()
-  } catch {
-    audio = null
-  }
-}
-
-function beep() {
-  if (!audio) return
-  const t = audio.currentTime
-  for (const [i, f] of [880, 880, 1320].entries()) {
-    const o = audio.createOscillator()
-    const g = audio.createGain()
-    o.frequency.value = f
-    g.gain.setValueAtTime(0.0001, t + i * 0.25)
-    g.gain.exponentialRampToValueAtTime(0.4, t + i * 0.25 + 0.02)
-    g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.25 + 0.2)
-    o.connect(g).connect(audio.destination)
-    o.start(t + i * 0.25)
-    o.stop(t + i * 0.25 + 0.22)
-  }
-}
-
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
 export default function RestTimer({ rest, onChange }: { rest: Rest | null; onChange: (r: Rest | null) => void }) {
@@ -69,16 +42,23 @@ export default function RestTimer({ rest, onChange }: { rest: Rest | null; onCha
   const left = rest ? Math.ceil((rest.endsAt - now) / 1000) : 0
   const over = !!rest && left <= 0
 
-  // Signal genau einmal, wenn die Pause abläuft (nicht, wenn man erst später zurückkommt)
+  // Signal, wenn die Pause abläuft. War die App im Hintergrund, kommt es beim Zurückkehren (bis 60 s danach).
   useEffect(() => {
     if (!rest) return
-    const ms = rest.endsAt - Date.now()
-    if (ms <= 0) return
-    const t = setTimeout(() => {
+    let fired = false
+    const fire = () => {
+      if (fired || Date.now() < rest.endsAt || Date.now() - rest.endsAt > 60_000) return
+      fired = true
       beep()
       navigator.vibrate?.([200, 100, 200])
-    }, ms)
-    return () => clearTimeout(t)
+    }
+    const t = setTimeout(fire, Math.max(0, rest.endsAt - Date.now()))
+    const onVisible = () => document.visibilityState === 'visible' && fire()
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      clearTimeout(t)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [rest])
 
   // Nach Ablauf noch kurz „Weiter“ zeigen, dann ausblenden
