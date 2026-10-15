@@ -7,7 +7,9 @@ import { uid, useStore } from '../store'
 import { dayLetter, dayStyle, weekStreak } from '../theme'
 import type { Session } from '../types'
 import { fmtDate, weekStart, todayISO } from '../util'
-import Workout from './Workout'
+import Workout, { Summary } from './Workout'
+import { sayIt, startMessage } from '../motivation'
+import { unlockAudio } from '../sound'
 
 export default function Today() {
   const { plan, sessions, settings, exById, saveSession } = useStore()
@@ -53,17 +55,27 @@ export default function Today() {
         }
       }),
     }
+    unlockAudio()
+    s.startMsg = startMessage(s, sessions, settings)
     saveSession(s)
+    sayIt(settings, s.startMsg)
   }
+
+  const name = settings.name?.trim()
+  const hour = new Date().getHours()
+  const hi = hour < 11 ? 'Guten Morgen' : hour < 18 ? 'Hallo' : 'Guten Abend'
+  const justDone = !!last?.finishedAt && Date.now() - new Date(last.finishedAt).getTime() < 3 * 3600_000
 
   return (
     <div>
       <header className="page-head">
         <div>
-          <h1>Heute</h1>
+          <h1>{name ? `${hi}, ${name}` : 'Heute'}</h1>
           <p className="muted">{last ? `Zuletzt ${fmtDate(last.date)} (${last.dayName})` : 'Los geht’s mit deinem ersten Training'}</p>
         </div>
       </header>
+
+      {justDone && last && <Summary session={last} />}
 
       <section className="hero">
         <Ring value={thisWeek} max={3}>

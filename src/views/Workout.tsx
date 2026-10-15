@@ -2,10 +2,12 @@ import { useCallback, useEffect, useState } from 'react'
 import ExerciseInfo from '../components/ExerciseInfo'
 import ExThumb, { MuscleTag } from '../components/ExThumb'
 import NumInput from '../components/NumInput'
-import RestTimer, { loadRest, storeRest, unlockAudio, type Rest } from '../components/RestTimer'
+import RestTimer, { loadRest, storeRest, type Rest } from '../components/RestTimer'
 import { isCompound } from '../muscles'
 import { describeSets, suggest, type Suggestion } from '../progression'
 import { useStore } from '../store'
+import { pickPraise, sayIt } from '../motivation'
+import { unlockAudio } from '../sound'
 import { dayLetter, dayStyle } from '../theme'
 import type { EntryLog, Exercise, PlanItem, Session, SetLog } from '../types'
 import { fmtDate, fmtNum } from '../util'
@@ -27,6 +29,13 @@ const LABEL: Record<Suggestion['kind'], string> = {
 export default function Workout({ session, onClose }: Props) {
   const { plan, settings, sessions, exById, saveSession, removeSession } = useStore()
   const [openCue, setOpenCue] = useState<string | null>(null)
+  // Begrüßung nur direkt nach dem Start zeigen
+  const [hello, setHello] = useState(() => !session.finished && !!session.startMsg && Date.now() - new Date(session.date).getTime() < 20_000)
+  useEffect(() => {
+    if (!hello) return
+    const t = setTimeout(() => setHello(false), 7000)
+    return () => clearTimeout(t)
+  }, [hello])
   const [rest, setRestState] = useState<Rest | null>(() => (session.finished ? null : loadRest()))
   const day = plan.days.find((d) => d.id === session.dayId)
 
@@ -83,7 +92,10 @@ export default function Workout({ session, onClose }: Props) {
 
   function finish() {
     setRest(null)
-    update((s) => ({ ...s, finished: true, finishedAt: s.finishedAt ?? new Date().toISOString() }))
+    const done: Session = { ...structuredClone(session), finished: true, finishedAt: session.finishedAt ?? new Date().toISOString() }
+    const p = session.praise ? { praise: session.praise, praiseId: session.praiseId } : pickPraise(done, sessions, settings, (s) => sessionKg(s, exById))
+    saveSession({ ...done, ...p })
+    if (p.praise) sayIt(settings, p.praise)
     onClose()
   }
 
@@ -113,6 +125,11 @@ export default function Workout({ session, onClose }: Props) {
           </button>
         )}
       </header>
+      {hello && (
+        <button className="hello" onClick={() => setHello(false)}>
+          {session.startMsg}
+        </button>
+      )}
       {session.finished && <Summary session={session} />}
       <div className="progress-bar day-progress">
         <div style={{ width: `${allSets ? (doneSets / allSets) * 100 : 0}%` }} />
@@ -279,18 +296,22 @@ function SetTable({ ex, sets, sug, onChange, onDone }: { ex: Exercise; sets: Set
   )
 }
 
-/** Bunte Abschluss-Karte für ein beendetes Training */
-function Summary({ session }: { session: Session }) {
-  const { exById } = useStore()
-  const sets = session.entries.reduce((n, e) => n + e.sets.filter((s) => s.done).length, 0)
-  const volume = session.entries.reduce(
+/** Bewegtes Gewicht (Kurzhantel × Wiederholungen) eines Trainings */
+export const sessionKg = (session: Session, exById: (id: string) => Exercise) =>
+  session.entries.reduce(
     (v, e) => v + (exById(e.exerciseId).kind === 'dumbbell' ? e.sets.filter((x) => x.done).reduce((a, x) => a + (x.weight ?? 0) * (x.reps ?? 0), 0) : 0),
     0,
   )
+
+/** Bunte Abschluss-Karte für ein beendetes Training */
+export function Summary({ session }: { session: Session }) {
+  const { exById } = useStore()
+  const sets = session.entries.reduce((n, e) => n + e.sets.filter((s) => s.done).length, 0)
+  const volume = sessionKg(session, exById)
   const mins = session.finishedAt ? Math.round((new Date(session.finishedAt).getTime() - new Date(session.date).getTime()) / 60000) : null
   return (
     <section className="summary">
-      <div className="summary-title">Training geschafft 🎉</div>
+      <div className="summary-title">{session.praise ?? 'Training geschafft 🎉'}</div>
       <div className="summary-stats">
         <div>
           <b>{sets}</b>
@@ -300,7 +321,7 @@ function Summary({ session }: { session: Session }) {
           <b>{fmtNum(volume, 0)}</b>
           <span>kg bewegt</span>
         </div>
-        {mins != null && mins < 300 && (
+        {mins != null && mins > 0 && mins < 300 && (
           <div>
             <b>{mins}</b>
             <span>Minuten</span>
