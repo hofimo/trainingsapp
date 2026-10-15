@@ -23,10 +23,32 @@ const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
   { id: 'plan', label: 'Plan', icon: icon(<><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></>) },
 ]
 
+function tabFromHash(): Tab {
+  const t = location.hash.slice(1)
+  return TABS.some((x) => x.id === t) ? (t as Tab) : 'today'
+}
+
 export default function App() {
   const { ready } = useStore()
-  const [tab, setTab] = useState<Tab>('today')
+  const [tab, setTab] = useState<Tab>(tabFromHash)
   const [settings, setSettings] = useState(false)
+
+  // Tippen auf eine Erinnerung öffnet den passenden Bereich (siehe public/sw.js)
+  useEffect(() => {
+    const open = (t: unknown) => {
+      if (!TABS.some((x) => x.id === t)) return
+      setSettings(false)
+      setTab(t as Tab)
+    }
+    const onMsg = (e: MessageEvent) => e.data?.type === 'open-tab' && open(e.data.tab)
+    const onHash = () => open(location.hash.slice(1))
+    navigator.serviceWorker?.addEventListener('message', onMsg)
+    window.addEventListener('hashchange', onHash)
+    return () => {
+      navigator.serviceWorker?.removeEventListener('message', onMsg)
+      window.removeEventListener('hashchange', onHash)
+    }
+  }, [])
 
   useEffect(() => window.scrollTo(0, 0), [tab, settings])
 

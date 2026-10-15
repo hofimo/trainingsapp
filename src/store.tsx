@@ -57,6 +57,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setSessions(ss.sort((a, b) => b.date.localeCompare(a.date)))
     setBodyWeights(bw.sort((a, b) => a.date.localeCompare(b.date)))
     setSupplements(sup ?? defaultSupplements())
+    // Einmal speichern, damit auch der Service Worker (Erinnerungen) die Liste lesen kann
+    if (!sup) db.kvSet('supplements', defaultSupplements())
     setSupplementLogs(sl)
     setReady(true)
   }, [])
