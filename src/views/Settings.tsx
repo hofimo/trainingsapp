@@ -119,6 +119,15 @@ export default function Settings({ onClose }: { onClose: () => void }) {
           <NumInput className="num short" value={settings.restShort ?? null} placeholder="60" onChange={(v) => saveSettings({ ...settings, restShort: v && v > 0 ? v : undefined })} ariaLabel="Pause Isolationsübungen in Sekunden" />
           <span className="small muted">s</span>
         </div>
+        <label className="toggle-row">
+          <input type="checkbox" checked={settings.loudBeep === true} onChange={(e) => saveSettings({ ...settings, loudBeep: e.target.checked })} />
+          <span>Ton auch bei Lautlos-Schalter</span>
+        </label>
+        <p className="small muted">
+          {settings.loudBeep
+            ? 'Achtung: Podcast oder Musik werden dabei angehalten.'
+            : 'Der Ton läuft über Podcast oder Musik, ohne sie anzuhalten. Bei eingeschaltetem Lautlos-Schalter bleibt er stumm.'}
+        </p>
         <button
           className="btn tiny ghost"
           onClick={() => {

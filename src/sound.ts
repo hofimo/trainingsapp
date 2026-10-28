@@ -4,10 +4,24 @@ type SessionType = 'auto' | 'playback' | 'transient' | 'transient-solo' | 'ambie
 const session = () => (navigator as Navigator & { audioSession?: { type: SessionType } }).audioSession
 
 let ctx: AudioContext | null = null
+let loud = false
+
+/**
+ * Standard: „ambient“ mischt den Ton unter Podcast oder Musik, ohne sie anzuhalten.
+ * Dafür bleibt er stumm, wenn der Lautlos-Schalter an ist.
+ * Mit `loudBeep` kommt der Ton auch bei Lautlos, hält aber andere Wiedergabe an.
+ */
+export function configureAudio(loudBeep: boolean) {
+  loud = loudBeep
+  const s = session()
+  if (s) s.type = 'ambient'
+}
 
 /** Bei jedem Tippen aufrufen (Satz abhaken, Training starten). */
 export function unlockAudio() {
   try {
+    const s = session()
+    if (s && s.type !== 'ambient') s.type = 'ambient'
     ctx ??= new AudioContext()
     if (ctx.state !== 'running') ctx.resume().catch(() => {})
     // Ein stiller Mini-Ton schaltet Safari den Ton für später frei
@@ -21,12 +35,12 @@ export function unlockAudio() {
   }
 }
 
-/** Dreifacher Piepton am Ende der Pause, auch im Lautlos-Modus. */
+/** Dreifacher Piepton am Ende der Pause. */
 export async function beep() {
   if (!ctx) return
   const s = session()
-  // „playback“ spielt auch bei Lautlos-Schalter; danach zurück auf Standard
-  if (s) s.type = 'playback'
+  // „playback“ spielt auch bei Lautlos-Schalter, unterbricht aber Podcast/Musik
+  if (s && loud) s.type = 'playback'
   try {
     if (ctx.state !== 'running') await ctx.resume()
   } catch {
@@ -44,7 +58,7 @@ export async function beep() {
     o.start(t + i * 0.3)
     o.stop(t + i * 0.3 + 0.27)
   }
-  if (s) setTimeout(() => (s.type = 'auto'), 1500)
+  if (s && loud) setTimeout(() => (s.type = 'ambient'), 1500)
 }
 
 /** Liest einen Satz auf Deutsch vor (falls das Gerät eine Stimme hat). */

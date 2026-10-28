@@ -84,6 +84,8 @@ export interface Settings {
   restShort?: number
   /** Vorname für die Ansprache */
   name?: string
+  /** Pausenton auch bei Lautlos-Schalter (hält dafür Podcast/Musik an) */
+  loudBeep?: boolean
   /** Begrüßung und Lob vorlesen (Standard an) */
   voice?: boolean
 }

@@ -1,6 +1,6 @@
 // Service Worker: macht die App offline nutzbar und zeigt die täglichen Erinnerungen.
 // Seitenaufrufe: erst Netz, bei Fehler Cache. Dateien (JS, CSS, Bilder): erst Cache, sonst Netz.
-const CACHE = 'training-v7'
+const CACHE = 'training-v8'
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './apple-touch-icon.png']
 
 // Übungsbilder vorab laden, damit „Technik“ auch offline funktioniert
