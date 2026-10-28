@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { configureAudio } from './sound'
 import { useStore } from './store'
 import Body from './views/Body'
 import History from './views/History'
@@ -29,7 +30,7 @@ function tabFromHash(): Tab {
 }
 
 export default function App() {
-  const { ready } = useStore()
+  const { ready, settings: prefs } = useStore()
   const [tab, setTab] = useState<Tab>(tabFromHash)
   const [settings, setSettings] = useState(false)
 
@@ -51,6 +52,7 @@ export default function App() {
   }, [])
 
   useEffect(() => window.scrollTo(0, 0), [tab, settings])
+  useEffect(() => configureAudio(prefs.loudBeep === true), [prefs.loudBeep])
 
   if (!ready) return <div className="loading">Lädt …</div>
 
