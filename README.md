@@ -38,7 +38,14 @@ Einrichten: App vom Home-Bildschirm öffnen → Einstellungen → Erinnerungen �
 
 ## Ernährung (Kalorien und Makros)
 
-Unter Körper → Ernährung. FDDB und Yazio haben keine offene Schnittstelle, und eine Web-App kann Apple Health nicht lesen. Beide Apps schreiben aber Nahrungsenergie, Protein, Fett und Kohlenhydrate nach Health. Ein iPhone-Kurzbefehl summiert die Tageswerte und kopiert den Text `TA;kcal=…;e=…;f=…;kh=…` (optional mit `datum=YYYY-MM-DD`, mehrere Tage zeilenweise), „Aus Health einfügen“ liest ihn aus der Zwischenablage. Die Anleitung steht in der App. Dazu gibt es Tagesziele, Durchschnitt der letzten 7 Tage, Diagramme und ab ca. 2 Wochen Daten eine Schätzung des echten Verbrauchs aus Essen und Gewichtsverlauf (`src/nutrition.ts`). Gespeichert wird unter dem Schlüssel `nutrition` im `kv`-Store und im Backup.
+Unter Körper → Ernährung: Tagebuch nach Mahlzeiten (Frühstück, Mittag, Abend, Snacks) mit Kalorien-Ring und Makro-Balken gegen die Tagesziele.
+
+- **Barcode scannen** mit der Handykamera. Auf dem iPhone gibt es keinen eingebauten Barcode-Scanner im Browser, deshalb liefert die App ZXing als WebAssembly mit (`barcode-detector`, die `.wasm` wird aus der App geladen, nicht vom CDN). Die Produktdaten kommen von [Open Food Facts](https://world.openfoodfacts.org) (frei, ohne Schlüssel); einmal gescannte Produkte werden lokal gespeichert und gehen danach auch offline.
+- **Suche** in rund 120 eingebauten Grundlebensmitteln (`src/foods.ts`, Werte pro 100 g mit typischen Portionen wie „1 Stück Apfel = 150 g“), in eigenen Lebensmitteln und online bei Open Food Facts.
+- Zuletzt gegessen, Favoriten, eigene Lebensmittel (z. B. bei unbekanntem Barcode, wird mit dem Barcode gespeichert), Schnelleintrag nur mit kcal/Makros, Mahlzeit „wie gestern“ übernehmen, Einträge antippen zum Ändern oder Löschen.
+- Auswertung: 7-Tage-Durchschnitt, Diagramme und ab ca. 2 Wochen Daten eine Schätzung des echten Verbrauchs aus Essen und Gewichtsverlauf (`src/nutrition.ts`).
+
+Gespeichert wird im `kv`-Store unter `foodLog`, `foods` und `foodFavs` und im Backup.
 
 ## Aufbau
 

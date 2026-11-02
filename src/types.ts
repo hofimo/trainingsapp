@@ -113,6 +113,53 @@ export interface NutritionDay {
   source?: 'health' | 'manual'
 }
 
+export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+
+export interface Portion {
+  /** z. B. "Stück", "Scheibe", "EL" */
+  label: string
+  /** Gramm bzw. ml pro Portion */
+  g: number
+}
+
+export interface Macros {
+  kcal: number
+  protein: number
+  fat: number
+  carbs: number
+}
+
+export interface Food {
+  /** b:… = eingebaut, off:<barcode> = Open Food Facts, c:… = selbst angelegt */
+  id: string
+  name: string
+  brand?: string
+  barcode?: string
+  unit: 'g' | 'ml'
+  /** Nährwerte pro 100 g bzw. 100 ml */
+  per100: Macros
+  portions?: Portion[]
+  source: 'base' | 'off' | 'custom'
+}
+
+export interface FoodEntry extends Macros {
+  id: string
+  /** YYYY-MM-DD */
+  date: string
+  meal: Meal
+  /** fehlt bei Schnelleinträgen */
+  foodId?: string
+  name: string
+  brand?: string
+  /** Menge in g bzw. ml */
+  amount: number
+  unit: 'g' | 'ml'
+  /** gewählte Portion, z. B. 2 × Scheibe */
+  portion?: { label: string; qty: number }
+  /** Zeitpunkt des Eintrags (ISO) */
+  at: string
+}
+
 export type DayTime = 'morning' | 'noon' | 'evening'
 
 export interface Supplement {
@@ -144,4 +191,7 @@ export interface Backup {
   supplements?: Supplement[]
   supplementLogs?: SupplementLog[]
   nutrition?: NutritionDay[]
+  foods?: Food[]
+  foodLog?: FoodEntry[]
+  foodFavs?: string[]
 }

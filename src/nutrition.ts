@@ -1,88 +1,8 @@
-// Ernährung: Werte aus dem Kurzbefehl (Apple Health) lesen, Ziele vorschlagen, Verbrauch schätzen.
+// Ernährung: Ziele vorschlagen, Durchschnitte und Verbrauch schätzen.
 import type { BodyWeight, NutritionDay, NutritionGoals } from './types'
 import { todayISO } from './util'
 
 type Key = 'kcal' | 'protein' | 'fat' | 'carbs'
-
-const KEYS: Record<string, Key | 'kj'> = {
-  kcal: 'kcal',
-  kalorien: 'kcal',
-  energie: 'kcal',
-  kj: 'kj',
-  e: 'protein',
-  eiweiß: 'protein',
-  eiweiss: 'protein',
-  protein: 'protein',
-  f: 'fat',
-  fett: 'fat',
-  fat: 'fat',
-  kh: 'carbs',
-  kohlenhydrate: 'carbs',
-  carbs: 'carbs',
-}
-
-/** Liest Zahlen wie "2150", "2.150", "2.150,5", "180,4" oder "180.4". */
-export function parseAmount(raw: string): number | null {
-  let s = raw.trim().replace(/\s/g, '')
-  if (!s) return null
-  if (s.includes(',') && s.includes('.')) s = s.replace(/\./g, '').replace(',', '.')
-  else if (s.includes(',')) s = s.replace(',', '.')
-  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '')
-  const v = parseFloat(s)
-  return Number.isFinite(v) ? v : null
-}
-
-function findDate(line: string): string | null {
-  const iso = line.match(/(\d{4})-(\d{1,2})-(\d{1,2})/)
-  if (iso) return `${iso[1]}-${iso[2].padStart(2, '0')}-${iso[3].padStart(2, '0')}`
-  const de = line.match(/(\d{1,2})\.(\d{1,2})\.(\d{4}|\d{2})(?!\d)/)
-  if (de) {
-    const y = de[3].length === 2 ? `20${de[3]}` : de[3]
-    return `${y}-${de[2].padStart(2, '0')}-${de[1].padStart(2, '0')}`
-  }
-  return null
-}
-
-const round1 = (n: number) => Math.round(n * 10) / 10
-
-/**
- * Liest den Text aus dem Kurzbefehl, z. B.
- * "TA;datum=2026-11-02;kcal=2150;e=180,5;f=70;kh=210"
- * Mehrere Tage gehen mit je einer Zeile. Zeilen ohne Datum gelten für heute.
- */
-export function parseNutritionText(text: string, fallbackDate = todayISO()): NutritionDay[] {
-  const byDate = new Map<string, Partial<Record<Key, number>>>()
-  let date = fallbackDate
-  for (const line of text.split(/[\r\n]+/)) {
-    date = findDate(line) ?? date
-    const vals = byDate.get(date) ?? {}
-    let found = false
-    for (const m of line.matchAll(/([a-zäöüß]+)\s*[=:]\s*(-?[\d.,]+)\s*(kj|kcal)?/gi)) {
-      const key = KEYS[m[1].toLowerCase()]
-      let v = parseAmount(m[2])
-      if (!key || v == null || v < 0) continue
-      if (key === 'kj' || m[3]?.toLowerCase() === 'kj') {
-        if (key !== 'kj' && key !== 'kcal') continue
-        v = v / 4.184
-        vals.kcal = v
-      } else vals[key] = v
-      found = true
-    }
-    if (found) byDate.set(date, vals)
-  }
-
-  const out: NutritionDay[] = []
-  for (const [d, v] of byDate) {
-    const protein = round1(v.protein ?? 0)
-    const fat = round1(v.fat ?? 0)
-    const carbs = round1(v.carbs ?? 0)
-    const kcal = Math.round(v.kcal ?? protein * 4 + fat * 9 + carbs * 4)
-    if (kcal <= 0 && protein + fat + carbs <= 0) continue
-    if (kcal > 15000 || protein > 1500 || fat > 1500 || carbs > 3000) continue
-    out.push({ date: d, kcal, protein, fat, carbs, source: 'health' })
-  }
-  return out.sort((a, b) => a.date.localeCompare(b.date))
-}
 
 const roundTo = (n: number, step: number) => Math.round(n / step) * step
 
