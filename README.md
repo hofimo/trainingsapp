@@ -1,6 +1,6 @@
 # Trainingsapp
 
-Web-App fürs Krafttraining im Homegym: Trainingsplan (Ganzkörper A/B/C mit Arm-Fokus), Sätze mit Gewicht und Wiederholungen eintragen, automatische Steigerungsvorschläge, Pausentimer, Sätze pro Muskel und Woche, Fortschrittsdiagramme und Körpergewicht. Läuft auf dem iPhone wie eine App, auch offline. Alle Daten bleiben auf dem Handy (Backup über Einstellungen → Backup exportieren).
+Web-App fürs Krafttraining im Homegym: Trainingsplan (Ganzkörper A/B/C mit Arm-Fokus), Sätze mit Gewicht und Wiederholungen eintragen, automatische Steigerungsvorschläge, Pausentimer, Sätze pro Muskel und Woche, Fortschrittsdiagramme, Körpergewicht sowie Kalorien und Makros pro Tag. Läuft auf dem iPhone wie eine App, auch offline. Alle Daten bleiben auf dem Handy (Backup über Einstellungen → Backup exportieren).
 
 ## Lokal starten (Mac)
 
@@ -35,6 +35,10 @@ Jeder weitere Push auf `main` aktualisiert die App automatisch. Die Trainingsdat
 Morgens gegen 7:30 Uhr (Gewicht, Morgen-Supplements) und abends gegen 18 Uhr (was heute noch fehlt). Ein iPhone-Web-App kann keine Uhrzeit selbst planen, deshalb schickt der geplante Workflow `.github/workflows/reminders.yml` den Push; den Text baut `public/sw.js` aus den Daten auf dem Handy.
 
 Einrichten: App vom Home-Bildschirm öffnen → Einstellungen → Erinnerungen → „Erinnerungen einschalten“ → „Code kopieren“. Dann im Repository unter **Settings → Secrets and variables → Actions** ein Secret `PUSH_CONFIG` mit dem Code anlegen. Testen: unter **Actions → Tägliche Erinnerungen → Run workflow**.
+
+## Ernährung (Kalorien und Makros)
+
+Unter Körper → Ernährung. FDDB und Yazio haben keine offene Schnittstelle, und eine Web-App kann Apple Health nicht lesen. Beide Apps schreiben aber Nahrungsenergie, Protein, Fett und Kohlenhydrate nach Health. Ein iPhone-Kurzbefehl summiert die Tageswerte und kopiert den Text `TA;kcal=…;e=…;f=…;kh=…` (optional mit `datum=YYYY-MM-DD`, mehrere Tage zeilenweise), „Aus Health einfügen“ liest ihn aus der Zwischenablage. Die Anleitung steht in der App. Dazu gibt es Tagesziele, Durchschnitt der letzten 7 Tage, Diagramme und ab ca. 2 Wochen Daten eine Schätzung des echten Verbrauchs aus Essen und Gewichtsverlauf (`src/nutrition.ts`). Gespeichert wird unter dem Schlüssel `nutrition` im `kv`-Store und im Backup.
 
 ## Aufbau
 

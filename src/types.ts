@@ -88,6 +88,29 @@ export interface Settings {
   loudBeep?: boolean
   /** Begrüßung und Lob vorlesen (Standard an) */
   voice?: boolean
+  /** Tagesziele für die Ernährung */
+  nutritionGoals?: NutritionGoals
+}
+
+export interface NutritionGoals {
+  kcal: number
+  protein: number
+  fat: number
+  carbs: number
+}
+
+export interface NutritionDay {
+  /** YYYY-MM-DD */
+  date: string
+  kcal: number
+  /** Eiweiß in g */
+  protein: number
+  /** Fett in g */
+  fat: number
+  /** Kohlenhydrate in g */
+  carbs: number
+  /** Woher die Werte kommen */
+  source?: 'health' | 'manual'
 }
 
 export type DayTime = 'morning' | 'noon' | 'evening'
@@ -120,4 +143,5 @@ export interface Backup {
   bodyWeights: BodyWeight[]
   supplements?: Supplement[]
   supplementLogs?: SupplementLog[]
+  nutrition?: NutritionDay[]
 }

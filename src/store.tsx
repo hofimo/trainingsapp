@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import * as db from './db'
 import { EXERCISES, defaultPlan, defaultSettings, defaultSupplements } from './defaults'
-import type { Backup, BodyWeight, Exercise, Plan, Session, Settings, Supplement, SupplementLog } from './types'
+import type { Backup, BodyWeight, Exercise, NutritionDay, Plan, Session, Settings, Supplement, SupplementLog } from './types'
 
 interface Store {
   ready: boolean
@@ -22,6 +22,10 @@ interface Store {
   removeSession: (id: string) => void
   saveBodyWeight: (b: BodyWeight) => void
   removeBodyWeight: (date: string) => void
+  nutrition: NutritionDay[]
+  /** Speichert einen oder mehrere Tage (ersetzt vorhandene Tage mit gleichem Datum) */
+  saveNutrition: (days: NutritionDay[]) => void
+  removeNutrition: (date: string) => void
   exportBackup: () => Backup
   importBackup: (b: Backup) => Promise<void>
   resetAll: () => Promise<void>
@@ -30,6 +34,8 @@ interface Store {
 const Ctx = createContext<Store | null>(null)
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
+
+const sortDays = (d: NutritionDay[]) => [...d].sort((a, b) => a.date.localeCompare(b.date))
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false)
@@ -40,9 +46,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [bodyWeights, setBodyWeights] = useState<BodyWeight[]>([])
   const [supplements, setSupplements] = useState<Supplement[]>(defaultSupplements)
   const [supplementLogs, setSupplementLogs] = useState<SupplementLog[]>([])
+  const [nutrition, setNutrition] = useState<NutritionDay[]>([])
 
   const load = useCallback(async () => {
-    const [p, s, c, ss, bw, sup, sl] = await Promise.all([
+    const [p, s, c, ss, bw, sup, sl, nu] = await Promise.all([
       db.kvGet<Plan>('plan'),
       db.kvGet<Settings>('settings'),
       db.kvGet<Exercise[]>('customExercises'),
@@ -50,6 +57,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       db.getBodyWeights(),
       db.kvGet<Supplement[]>('supplements'),
       db.getSupplementLogs(),
+      db.kvGet<NutritionDay[]>('nutrition'),
     ])
     setPlan(p ?? defaultPlan())
     setSettings(s ?? defaultSettings())
@@ -60,6 +68,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     // Einmal speichern, damit auch der Service Worker (Erinnerungen) die Liste lesen kann
     if (!sup) db.kvSet('supplements', defaultSupplements())
     setSupplementLogs(sl)
+    setNutrition(sortDays(nu ?? []))
     setReady(true)
   }, [])
 
@@ -124,6 +133,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setBodyWeights((prev) => prev.filter((x) => x.date !== date))
       db.deleteBodyWeight(date)
     },
+    nutrition,
+    saveNutrition: (days) => {
+      const dates = new Set(days.map((d) => d.date))
+      const next = sortDays([...nutrition.filter((n) => !dates.has(n.date)), ...days])
+      setNutrition(next)
+      db.kvSet('nutrition', next)
+    },
+    removeNutrition: (date) => {
+      const next = nutrition.filter((n) => n.date !== date)
+      setNutrition(next)
+      db.kvSet('nutrition', next)
+    },
     exportBackup: () => ({
       app: 'trainingsapp',
       version: 1,
@@ -135,6 +156,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       bodyWeights,
       supplements,
       supplementLogs,
+      nutrition,
     }),
     importBackup: async (b) => {
       if (b?.app !== 'trainingsapp' || !b.plan || !Array.isArray(b.sessions)) throw new Error('Keine gültige Backup-Datei')
@@ -146,6 +168,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       for (const w of b.bodyWeights ?? []) await db.putBodyWeight(w)
       if (b.supplements) await db.kvSet('supplements', b.supplements)
       for (const l of b.supplementLogs ?? []) await db.putSupplementLog(l)
+      if (b.nutrition) await db.kvSet('nutrition', b.nutrition)
       await load()
     },
     resetAll: async () => {
