@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import * as db from './db'
 import { EXERCISES, defaultPlan, defaultSettings, defaultSupplements } from './defaults'
-import type { Backup, BodyWeight, Exercise, NutritionDay, Plan, Session, Settings, Supplement, SupplementLog } from './types'
+import { BASE_FOODS } from './foods'
+import type { Backup, BodyWeight, Exercise, Food, FoodEntry, NutritionDay, Plan, Session, Settings, Supplement, SupplementLog } from './types'
 
 interface Store {
   ready: boolean
@@ -22,10 +23,20 @@ interface Store {
   removeSession: (id: string) => void
   saveBodyWeight: (b: BodyWeight) => void
   removeBodyWeight: (date: string) => void
+  /** Tagessummen aus dem Ernährungstagebuch (für Auswertungen) */
   nutrition: NutritionDay[]
-  /** Speichert einen oder mehrere Tage (ersetzt vorhandene Tage mit gleichem Datum) */
-  saveNutrition: (days: NutritionDay[]) => void
-  removeNutrition: (date: string) => void
+  /** Alle Lebensmittel: eingebaute, gespeicherte aus Open Food Facts und eigene */
+  foods: Food[]
+  foodById: (id: string) => Food | undefined
+  /** Speichert ein Lebensmittel (eigenes oder aus Open Food Facts) lokal */
+  saveFood: (f: Food) => void
+  removeFood: (id: string) => void
+  foodLog: FoodEntry[]
+  /** Fügt Einträge hinzu oder ersetzt solche mit gleicher id */
+  saveFoodEntries: (e: FoodEntry[]) => void
+  removeFoodEntry: (id: string) => void
+  foodFavs: string[]
+  toggleFoodFav: (id: string) => void
   exportBackup: () => Backup
   importBackup: (b: Backup) => Promise<void>
   resetAll: () => Promise<void>
@@ -35,7 +46,19 @@ const Ctx = createContext<Store | null>(null)
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
 
-const sortDays = (d: NutritionDay[]) => [...d].sort((a, b) => a.date.localeCompare(b.date))
+const dayToEntry = (d: NutritionDay): FoodEntry => ({
+  id: `day-${d.date}`,
+  date: d.date,
+  meal: 'snack',
+  name: 'Tageswerte (übernommen)',
+  amount: 0,
+  unit: 'g',
+  kcal: d.kcal,
+  protein: d.protein,
+  fat: d.fat,
+  carbs: d.carbs,
+  at: `${d.date}T20:00:00`,
+})
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false)
@@ -46,10 +69,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [bodyWeights, setBodyWeights] = useState<BodyWeight[]>([])
   const [supplements, setSupplements] = useState<Supplement[]>(defaultSupplements)
   const [supplementLogs, setSupplementLogs] = useState<SupplementLog[]>([])
-  const [nutrition, setNutrition] = useState<NutritionDay[]>([])
+  const [savedFoods, setSavedFoods] = useState<Food[]>([])
+  const [foodLog, setFoodLog] = useState<FoodEntry[]>([])
+  const [foodFavs, setFoodFavs] = useState<string[]>([])
 
   const load = useCallback(async () => {
-    const [p, s, c, ss, bw, sup, sl, nu] = await Promise.all([
+    const [p, s, c, ss, bw, sup, sl, nu, fd, fl, ff] = await Promise.all([
       db.kvGet<Plan>('plan'),
       db.kvGet<Settings>('settings'),
       db.kvGet<Exercise[]>('customExercises'),
@@ -58,6 +83,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       db.kvGet<Supplement[]>('supplements'),
       db.getSupplementLogs(),
       db.kvGet<NutritionDay[]>('nutrition'),
+      db.kvGet<Food[]>('foods'),
+      db.kvGet<FoodEntry[]>('foodLog'),
+      db.kvGet<string[]>('foodFavs'),
     ])
     setPlan(p ?? defaultPlan())
     setSettings(s ?? defaultSettings())
@@ -68,7 +96,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     // Einmal speichern, damit auch der Service Worker (Erinnerungen) die Liste lesen kann
     if (!sup) db.kvSet('supplements', defaultSupplements())
     setSupplementLogs(sl)
-    setNutrition(sortDays(nu ?? []))
+    let log = fl ?? []
+    // Alte Tageswerte (Import aus Apple Health) einmalig ins Tagebuch übernehmen
+    if (nu?.length) {
+      log = [...log, ...nu.map(dayToEntry)]
+      await db.kvSet('foodLog', log)
+      await db.kvSet('nutrition', [])
+    }
+    setFoodLog(log)
+    setSavedFoods(fd ?? [])
+    setFoodFavs(ff ?? [])
     setReady(true)
   }, [])
 
@@ -76,6 +113,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     load()
     db.requestPersistence()
   }, [load])
+
+  const foods = useMemo(() => [...savedFoods, ...BASE_FOODS], [savedFoods])
+  const foodMap = useMemo(() => new Map(foods.map((f) => [f.id, f])), [foods])
+  const nutrition = useMemo(() => {
+    const m = new Map<string, NutritionDay>()
+    for (const e of foodLog) {
+      const d = m.get(e.date) ?? { date: e.date, kcal: 0, protein: 0, fat: 0, carbs: 0 }
+      d.kcal += e.kcal
+      d.protein += e.protein
+      d.fat += e.fat
+      d.carbs += e.carbs
+      m.set(e.date, d)
+    }
+    return [...m.values()].sort((a, b) => a.date.localeCompare(b.date))
+  }, [foodLog])
 
   const exercises = useMemo(() => [...EXERCISES, ...custom], [custom])
   const exMap = useMemo(() => new Map(exercises.map((e) => [e.id, e])), [exercises])
@@ -134,16 +186,35 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       db.deleteBodyWeight(date)
     },
     nutrition,
-    saveNutrition: (days) => {
-      const dates = new Set(days.map((d) => d.date))
-      const next = sortDays([...nutrition.filter((n) => !dates.has(n.date)), ...days])
-      setNutrition(next)
-      db.kvSet('nutrition', next)
+    foods,
+    foodById: (id) => foodMap.get(id),
+    saveFood: (f) => {
+      const next = [f, ...savedFoods.filter((x) => x.id !== f.id)]
+      setSavedFoods(next)
+      db.kvSet('foods', next)
     },
-    removeNutrition: (date) => {
-      const next = nutrition.filter((n) => n.date !== date)
-      setNutrition(next)
-      db.kvSet('nutrition', next)
+    removeFood: (id) => {
+      const next = savedFoods.filter((x) => x.id !== id)
+      setSavedFoods(next)
+      db.kvSet('foods', next)
+    },
+    foodLog,
+    saveFoodEntries: (list) => {
+      const ids = new Set(list.map((e) => e.id))
+      const next = [...foodLog.filter((e) => !ids.has(e.id)), ...list]
+      setFoodLog(next)
+      db.kvSet('foodLog', next)
+    },
+    removeFoodEntry: (id) => {
+      const next = foodLog.filter((e) => e.id !== id)
+      setFoodLog(next)
+      db.kvSet('foodLog', next)
+    },
+    foodFavs,
+    toggleFoodFav: (id) => {
+      const next = foodFavs.includes(id) ? foodFavs.filter((x) => x !== id) : [id, ...foodFavs]
+      setFoodFavs(next)
+      db.kvSet('foodFavs', next)
     },
     exportBackup: () => ({
       app: 'trainingsapp',
@@ -156,7 +227,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       bodyWeights,
       supplements,
       supplementLogs,
-      nutrition,
+      foods: savedFoods,
+      foodLog,
+      foodFavs,
     }),
     importBackup: async (b) => {
       if (b?.app !== 'trainingsapp' || !b.plan || !Array.isArray(b.sessions)) throw new Error('Keine gültige Backup-Datei')
@@ -169,6 +242,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (b.supplements) await db.kvSet('supplements', b.supplements)
       for (const l of b.supplementLogs ?? []) await db.putSupplementLog(l)
       if (b.nutrition) await db.kvSet('nutrition', b.nutrition)
+      if (b.foods) await db.kvSet('foods', b.foods)
+      if (b.foodLog) await db.kvSet('foodLog', b.foodLog)
+      if (b.foodFavs) await db.kvSet('foodFavs', b.foodFavs)
       await load()
     },
     resetAll: async () => {
