@@ -20,7 +20,7 @@ const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
   { id: 'today', label: 'Heute', icon: icon(<><path d="M6 7v10M18 7v10M3 10v4M21 10v4M6 12h12" /></>) },
   { id: 'history', label: 'Verlauf', icon: icon(<><rect x="4" y="5" width="16" height="15" rx="2" /><path d="M4 10h16M9 3v4M15 3v4" /></>) },
   { id: 'progress', label: 'Fortschritt', icon: icon(<><path d="M4 19h16" /><path d="M5 15l4-4 4 3 6-7" /></>) },
-  { id: 'body', label: 'Gewicht', icon: icon(<><rect x="4" y="4" width="16" height="16" rx="4" /><path d="M9 9a4 4 0 0 1 6 0l-2 3" /></>) },
+  { id: 'body', label: 'Körper', icon: icon(<><rect x="4" y="4" width="16" height="16" rx="4" /><path d="M9 9a4 4 0 0 1 6 0l-2 3" /></>) },
   { id: 'plan', label: 'Plan', icon: icon(<><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01" /></>) },
 ]
 

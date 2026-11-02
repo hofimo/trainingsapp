@@ -3,8 +3,49 @@ import LineChart from '../components/LineChart'
 import NumInput from '../components/NumInput'
 import { useStore } from '../store'
 import { fmtDate, fmtNum, todayISO } from '../util'
+import Nutrition from './Nutrition'
+
+type Part = 'weight' | 'food'
+
+function savedPart(): Part {
+  try {
+    return localStorage.getItem('bodyPart') === 'food' ? 'food' : 'weight'
+  } catch {
+    return 'weight'
+  }
+}
 
 export default function Body() {
+  const [part, setPart] = useState<Part>(savedPart)
+  const choose = (p: Part) => {
+    setPart(p)
+    try {
+      localStorage.setItem('bodyPart', p)
+    } catch {
+      // egal
+    }
+  }
+  return (
+    <div>
+      <header className="page-head">
+        <div>
+          <h1>Körper</h1>
+        </div>
+      </header>
+      <div className="seg">
+        <button className={part === 'weight' ? 'on' : ''} onClick={() => choose('weight')}>
+          ⚖️ Gewicht
+        </button>
+        <button className={part === 'food' ? 'on' : ''} onClick={() => choose('food')}>
+          🍽️ Ernährung
+        </button>
+      </div>
+      {part === 'weight' ? <Weight /> : <Nutrition />}
+    </div>
+  )
+}
+
+function Weight() {
   const { bodyWeights, saveBodyWeight, removeBodyWeight } = useStore()
   const latest = bodyWeights[bodyWeights.length - 1]
   const [kg, setKg] = useState<number | null>(null)
@@ -32,15 +73,8 @@ export default function Body() {
 
   return (
     <div>
-      <header className="page-head">
-        <div>
-          <h1>Körpergewicht</h1>
-          <p className="muted">{latest ? `Aktuell ${fmtNum(latest.kg)} kg` : 'Noch nichts eingetragen'}</p>
-        </div>
-      </header>
-
       <section className="card">
-        <h2>Eintragen</h2>
+        <h2>{latest ? `Aktuell ${fmtNum(latest.kg)} kg` : 'Gewicht eintragen'}</h2>
         <p className="small muted">Am besten morgens nach dem Aufstehen, immer unter gleichen Bedingungen.</p>
         <div className="form-row">
           <NumInput decimal className="num wide" value={kg} placeholder={latest ? String(latest.kg).replace('.', ',') : 'kg'} onChange={setKg} ariaLabel="Gewicht in kg" />
